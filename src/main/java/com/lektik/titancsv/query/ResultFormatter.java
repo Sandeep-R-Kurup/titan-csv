@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +33,9 @@ public final class ResultFormatter {
             .addRegistry(TitanIoRegistry.INSTANCE)
             .create()
             .createMapper();
+
+    // Columns shown first in text tables, in this order; all other columns follow alphabetically.
+    private static final List<String> PREFERRED_COLUMNS = Arrays.asList("id", "label", "csvId", "name");
 
     // Utility class: only static methods, no instances.
     private ResultFormatter() {
@@ -104,12 +109,19 @@ public final class ResultFormatter {
     //  3. print header, a "----+----" separator, then the padded rows
     // ---------------------------------------------------------------------------------------------
     private static void table(List<Object> rows, StringBuilder sb) {
-        // 1. collect column names in first-seen order
+        // 1. collect column names. Gremlin maps (valueMap) are unordered, so sort for stable output:
+        //    id, label, csvId, name first (when present), then the rest alphabetically.
         Set<String> cols = new LinkedHashSet<>();
         for (Object row : rows) {
             for (Object k : ((Map<?, ?>) row).keySet()) cols.add(String.valueOf(k));
         }
-        List<String> header = new ArrayList<>(cols);
+        List<String> header = new ArrayList<>();
+        for (String preferred : PREFERRED_COLUMNS) {
+            if (cols.remove(preferred)) header.add(preferred);
+        }
+        List<String> rest = new ArrayList<>(cols);
+        Collections.sort(rest);
+        header.addAll(rest);
         List<String[]> cells = new ArrayList<>();
         int[] width = new int[header.size()];
         for (int i = 0; i < header.size(); i++) width[i] = header.get(i).length();

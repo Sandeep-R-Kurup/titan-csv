@@ -48,6 +48,15 @@ public final class Main implements Runnable {
     public static void main(String[] args) {
         int code = new CommandLine(new Main())
                 .setCaseInsensitiveEnumValuesAllowed(true) // allows --format json / JSON / Json
+                // Unexpected errors: print one clear line instead of a Java stack trace.
+                // Set TITAN_CSV_DEBUG=1 to see the full stack trace when troubleshooting.
+                .setExecutionExceptionHandler((ex, cmd, parseResult) -> {
+                    if (System.getenv("TITAN_CSV_DEBUG") != null) {
+                        ex.printStackTrace();
+                    }
+                    System.err.println("Error: " + ex.getMessage());
+                    return 1;
+                })
                 .execute(args);
         System.exit(code);
     }

@@ -20,6 +20,28 @@ mvn package            # compiles, runs the 7 tests, builds target/titan-csv.jar
 
 On Linux or Windows, install any OpenJDK 8 and point `JAVA_HOME` at it.
 
+## Quick start with make
+
+```sh
+make                 # list all shortcuts
+make build           # build the jar
+make test            # run the tests
+make data            # show the sample CSV files and the relationships they describe
+make load            # wipe the graph, load the sample CSVs
+make graph           # show what is now stored in Titan (vertices with ids, edges)
+make query Q="g.V().has('name','marko').out('knows').values('name')"
+make repl            # interactive prompt
+
+make serve           # terminal 1: REST API on :8182, token demo123, writes enabled
+make health          # terminal 2: GET /health
+make schema          #             GET /schema
+make api Q="g.V().groupCount().by(label)"      # POST /query
+make stop            # stop a server left running
+```
+
+Override the defaults inline, e.g. `make serve PORT=9000 TOKEN=secret` or `make query CONFIG=conf/titan-inmemory.properties Q="..."`.
+The BerkeleyDB graph can be opened by only one process at a time. While `make serve` is running, use the REST targets (`health`, `schema`, `api`), not `load`/`query`/`repl`.
+
 ## CSV format
 
 **Vertex files** need `id` and `label` columns. **Edge files** need `from`, `to` and `label` columns (`from`/`to` are vertex `id`s).

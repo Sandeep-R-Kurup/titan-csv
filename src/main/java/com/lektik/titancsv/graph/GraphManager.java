@@ -43,9 +43,29 @@ public final class GraphManager implements AutoCloseable { // AutoCloseable -> u
     // OPEN: read the .properties file (storage backend, directory...), open the graph, ensure schema.
     // ---------------------------------------------------------------------------------------------
     public static GraphManager open(String configPath) {
-        TitanGraph graph = TitanFactory.open(requireConfig(configPath)); // connects to BerkeleyDB / in-memory store
-        ensureSchema(graph);                                            // create csvId key + index if missing
+        TitanGraph graph = openTitan(configPath);  // connects to BerkeleyDB / in-memory store
+        ensureSchema(graph);                       // create csvId key + index if missing
         return new GraphManager(graph);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // OPEN TITAN with a friendly error for the most common problem: BerkeleyDB allows only ONE process
+    // to open the database folder. If `serve` is running, a second `load`/`query` would otherwise fail
+    // with a 40-line stack trace ending in EnvironmentLockedException.
+    // ---------------------------------------------------------------------------------------------
+    private static TitanGraph openTitan(String configPath) {
+        try {
+            return TitanFactory.open(requireConfig(configPath));
+        } catch (RuntimeException e) {
+            for (Throwable t = e; t != null; t = t.getCause()) {
+                if (t.getClass().getSimpleName().equals("EnvironmentLockedException")) {
+                    throw new IllegalStateException("The graph database is already open in another process "
+                            + "(probably a running `serve`). Stop it first (Ctrl+C or `make stop`), "
+                            + "or query it through the REST API instead.", e);
+                }
+            }
+            throw e;
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -54,7 +74,7 @@ public final class GraphManager implements AutoCloseable { // AutoCloseable -> u
     // ---------------------------------------------------------------------------------------------
     /** Deletes all data stored by the graph described by {@code configPath}. */
     public static void drop(String configPath) {
-        TitanGraph graph = TitanFactory.open(requireConfig(configPath));
+        TitanGraph graph = openTitan(configPath);
         graph.close();
         TitanCleanup.clear(graph);
     }
