@@ -1,0 +1,5 @@
+id,label,name,age:int
+1,person,marko,29
+2,person,vadas,27
+4,person,josh,32
+6,person,peter,35

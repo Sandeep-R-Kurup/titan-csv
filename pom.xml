@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.lektik</groupId>
+  <artifactId>titan-csv</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+  <name>titan-csv</name>
+  <description>Load CSV files into a Titan 1.0 graph and query them with Gremlin (CLI + REST)</description>
+
+  <!-- Build settings: Java 8 (Titan 1.0 does not run on newer Java), UTF-8 sources, pinned versions. -->
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <titan.version>1.0.0</titan.version>
+    <tinkerpop.version>3.0.1-incubating</tinkerpop.version>
+  </properties>
+
+  <dependencies>
+    <!-- Titan graph database core (graph API, schema, transactions, indexes). -->
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-core</artifactId>
+      <version>${titan.version}</version>
+    </dependency>
+    <!-- Titan storage adapter for Berkeley DB JE: embedded, persistent, no server needed. -->
+    <dependency>
+      <groupId>com.thinkaurelius.titan</groupId>
+      <artifactId>titan-berkeleyje</artifactId>
+      <version>${titan.version}</version>
+    </dependency>
+    <!-- Gremlin-Groovy script engine: evaluates query strings like "g.V().count()". -->
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-groovy</artifactId>
+      <version>${tinkerpop.version}</version>
+    </dependency>
+    <!-- CSV parser (handles headers, quotes, commas inside values). -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <!-- Command-line framework: subcommands, options, help text. -->
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.7.6</version>
+    </dependency>
+    <!-- Logging backend for Titan's log messages (configured in src/main/resources/log4j.properties). -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.12</version>
+    </dependency>
+
+    <!-- Unit testing (test scope: not packaged into the jar). -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>titan-csv</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.2</version>
+      </plugin>
+      <!-- Shade plugin: builds ONE runnable "fat jar" (target/titan-csv.jar) containing all dependencies.
+           ServicesResourceTransformer merges META-INF/services files (Titan/TinkerPop discover plugins through them);
+           ManifestResourceTransformer sets Main as the entry point so "java -jar" works;
+           signature files are excluded because they become invalid once jars are merged. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.lektik.titancsv.Main</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
