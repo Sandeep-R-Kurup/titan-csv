@@ -42,6 +42,8 @@ make stop            # stop a server left running
 Override the defaults inline, e.g. `make serve PORT=9000 TOKEN=secret` or `make query CONFIG=conf/titan-inmemory.properties Q="..."`.
 The BerkeleyDB graph can be opened by only one process at a time. While `make serve` is running, use the REST targets (`health`, `schema`, `api`), not `load`/`query`/`repl`.
 
+More example queries (filters, traversals, paths, aggregations, POST writes and `/load`), each with an explanation and real output: **[QUERIES.md](QUERIES.md)**.
+
 ## CSV format
 
 **Vertex files** need `id` and `label` columns. **Edge files** need `from`, `to` and `label` columns (`from`/`to` are vertex `id`s).
